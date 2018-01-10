@@ -1,30 +1,36 @@
 #define LED_1 11
 #define LED_2 12
-
+#define PWM_VAL 100
 char buff[20] = {0x00};
 int buff_flag = 0;
 int mode = 0;
+#define GPIO_R  3
+#define GPIO_G  5
+#define GPIO_B  6
+#define GPIO_W  9
+
 byte R = 0, G = 0, B = 0, W = 0;
 byte SR = 0, SG = 0, SB = 0, SW = 0;
 void setup() {
   // Open serial communications and wait for port to open:
   Serial.begin(115200);
-  Serial.println("!");
+  Serial.println("Ok");
 
-  pinMode(3, OUTPUT);
-  pinMode(5, OUTPUT);
-  pinMode(6, OUTPUT);
-  pinMode(9, OUTPUT);
+  pinMode(GPIO_R, OUTPUT);
+  pinMode(GPIO_G, OUTPUT);
+  pinMode(GPIO_B, OUTPUT);
+  pinMode(GPIO_W, OUTPUT);
   pinMode(LED_1, OUTPUT);
   pinMode(LED_2, OUTPUT);
-            digitalWrite(LED_1, HIGH);
-            digitalWrite(LED_2, HIGH);
+  digitalWrite(LED_1, HIGH);
+  digitalWrite(LED_2, HIGH);
 }
 
 void loop() { // run over and over
   buff_flag = 0;
   while (Serial.available()) {
     buff[buff_flag] = Serial.read();
+    Serial.print((char)buff[buff_flag]);
     buff_flag++;
     delay(5);
   }
@@ -41,13 +47,37 @@ void loop() { // run over and over
   if (buff[0] != 0x00) {
     for (int x = 0; x < 20; x++) {
       //Serial.print(buff[x]);
+      if (x == 0) {
+        if (buff[x] == '1' && buff[x + 1] != '0' && buff_flag < 3 ) {
+          Serial.println("!");
+          for (int color = 0; color < 10; color++) {
+            analogWrite(GPIO_R, color);
+            analogWrite(GPIO_G, color);
+            analogWrite(GPIO_B, color);
+            analogWrite(GPIO_W, color);
+            delay(20);
+          }
+          for (int color = 20; color > -1; color--) {
+            analogWrite(GPIO_R, color);
+            analogWrite(GPIO_G, color);
+            analogWrite(GPIO_B, color);
+            analogWrite(GPIO_W, color);
+            delay(20);
+          }
+          analogWrite(GPIO_R, SR);
+          analogWrite(GPIO_G, SG);
+          analogWrite(GPIO_B, SB);
+          analogWrite(GPIO_W, SW);
+        }
+      }
       if (x == 2) {
+        Serial.println("");
         //Serial.print(buff[x]);
         if (buff[x] == '0') {
           Serial.print("!");
         } else if (buff[x] == '1') {
           Serial.print("Change Light to Green");
-          SG = 200;
+          SG = PWM_VAL;
           SW = SR = SB = 0;
         } else if (buff[x] == '2') {
           Serial.print("TV power");
@@ -60,7 +90,7 @@ void loop() { // run over and over
           } else {
             digitalWrite(LED_1, LOW);
             digitalWrite(LED_2, LOW);
-            SW = SG = SB = SR = 230;
+            SW = SG = SB = SR = PWM_VAL;
           }
 
         } else if (buff[x] == '4') {
@@ -71,54 +101,55 @@ void loop() { // run over and over
           digitalWrite(LED_1, !digitalRead(LED_1));
         } else if (buff[x] == '6') {
           Serial.print("Change Light to Red");
-          SR = 200;
+          SR = PWM_VAL;
           SW = SB = SG = 0;
         } else if (buff[x] == '7') {
           Serial.print("Bedroom lights");
           if (SW != 0 || SR != 0 || SB != 0 || SG != 0) {
             SW = SR = SB = SR = 0;
           } else {
-            SW = SR = SB = SR = 230;
+            SW = SR = SB = SR = PWM_VAL;
           }
         } else if (buff[x] == '8') {
           Serial.print("Change light to Blue");
-          SB = 200;
+          SB = PWM_VAL;
           SW = SR = SG = 0;
         }
       }
+
       buff[x] = 0x00;
     }
   }
   if (SR > R) {
     R++;
-    analogWrite(3, R);
+    analogWrite(GPIO_R, R);
   } else if (SR < R) {
     R--;
-    analogWrite(3, R);
+    analogWrite(GPIO_R, R);
   }
 
   if (SG > G) {
     G++;
-    analogWrite(5, G);
+    analogWrite(GPIO_G, G);
   } else if (SG < G) {
     G--;
-    analogWrite(5, G);
+    analogWrite(GPIO_G, G);
   }
 
   if (SB > B) {
     B++;
-    analogWrite(6, B);
+    analogWrite(GPIO_B, B);
   } else if (SB < B) {
     B--;
-    analogWrite(6, B);
+    analogWrite(GPIO_B, B);
   }
 
   if (SW > W) {
     W++;
-    analogWrite(9, W);
+    analogWrite(GPIO_W, W);
   } else if (SW < W) {
     W--;
-    analogWrite(9, W);
+    analogWrite(GPIO_W, W);
   }
   delay(5);
 }
